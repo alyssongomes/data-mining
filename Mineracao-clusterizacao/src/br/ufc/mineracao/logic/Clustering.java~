@@ -1,8 +1,6 @@
 package br.ufc.mineracao.logic;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -11,12 +9,12 @@ import br.ufc.mineracao.model.Point;
 
 public class Clustering {
 	
-	private List<Point> points = null;
-	private int clusterId = 1;
+	private static List<Point> points = null;
+	private static int clusterId = 1;
 	
 	
-	public void dbSCAN(int minPoints, double eps){
-		points = PointDAO.queryPointByHour("09:00:00", "09:01:00", "2008-02-03");
+	public static void dbSCAN(int minPoints, double eps){
+		points = PointDAO.queryPointByHour("17:00:00", "18:00:00", "2008-02-02");
 		boolean expansion;
 		
 		for(int i=0; i<PointDAO.LENGTH; i++){
@@ -28,11 +26,12 @@ public class Clustering {
 				}
 			}
 		}
+		
 		System.out.println(clusterId);
 		
 	}
 	
-	private boolean expandCluster(Point p, int clusterId, int minPoint, double eps){
+	private static boolean expandCluster(Point p, int clusterId, int minPoint, double eps){
 		ArrayList<Point> neighbors = neighborsPoint(p,eps);//vizinhos
 		if(neighbors.size() < minPoint){
 			p.cluster = -1;//Outlier
@@ -44,21 +43,25 @@ public class Clustering {
 			}
 			neighbors.remove(p);
 			
-			for (int i = 0; i < neighbors.size(); i++) {
-				Point point = neighbors.get(i);
-				if(point.idTaxiDriver != p.idTaxiDriver ){
+			for (Iterator<Point> po = neighbors.iterator();po.hasNext();) {
+				Point point = po.next();
+				if(point.latitude != p.latitude && point.longitude != p.longitude){
 					ArrayList<Point> neigh = neighborsPoint(point,eps);
 					if(neigh.size() >= minPoint){
+						List<Point> pointsToBeAdd = new ArrayList<Point>();
 						point.iscore = true; //marco como centroide
-						for (Point point2: neigh) {
+						for (Iterator<Point> po2 = neigh.iterator();po2.hasNext();) {
+							Point point2 = po2.next();
 							if(point2.classfield == -1  || point2.cluster == -1){
 								if(point2.classfield == -1){
-									neighbors.add(point2);
+									//neighbors.add(point2);
+									pointsToBeAdd.add(point2);
 								}
 								point2.cluster = clusterId;
 								point2.iscore = false;
 							}
 						}
+						neigh.addAll(pointsToBeAdd);
 					}
 				}
 			}
@@ -66,8 +69,7 @@ public class Clustering {
 		}
 	}
 	
-	//Vizinhos de 'p'
-	private ArrayList<Point> neighborsPoint(Point p, double eps){
+	private static ArrayList<Point> neighborsPoint(Point p, double eps){
 		ArrayList<Point> neighbors = new ArrayList<Point>();
 		for (Point point : points) {
 			if(euclideanDistance(p, point) <= eps){
@@ -78,16 +80,14 @@ public class Clustering {
 	}
 	
 	//Distancia euclidiana
-	private double euclideanDistance(Point source, Point target){
+	private static double euclideanDistance(Point source, Point target){
 		return Math.sqrt(Math.pow(source.longitude - target.longitude,2)+ Math.pow(source.latitude - target.latitude,2));
 	}
 	
-	
 	public static void main(String[] args) {
-		Clustering c = new Clustering();
 		long start = System.currentTimeMillis();
 		//Clustering.dbSCAN(100,0.00333982674912137);
-		c.dbSCAN(10,0.00301);
+		Clustering.dbSCAN(100,0.005);
 		long elapsed = System.currentTimeMillis() - start;
 		System.out.println(elapsed/1000+" segundos");
 	}
