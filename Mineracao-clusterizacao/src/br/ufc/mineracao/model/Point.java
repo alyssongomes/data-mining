@@ -1,12 +1,12 @@
 package br.ufc.mineracao.model;
 
 public class Point {
-	public int StudentId;
+	public int studentId;
 	public int idTaxiDriver;
 	public double longitude;
 	public double latitude;
 	public int cluster;
-	public int classfield = -1; 
+	public boolean classfield = false; //foi visitado, por padrão -1, ou seja, não foi visitado
 	public boolean iscore;
 	public int weekday;
 
