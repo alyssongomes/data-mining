@@ -7,7 +7,7 @@ import java.util.List;
 import br.ufc.mineracao.dao.PointDAO;
 import br.ufc.mineracao.model.Point;
 
-public class Clustering {
+public class ClusteringV2 {
 	
 	private List<Point> points = null;
 	
@@ -18,21 +18,30 @@ public class Clustering {
 		boolean expansion;
 		int clusterId = 1;
 		
+		System.out.println("Tamanho: "+pdao.LENGTH);
+		
 		for(int i=0; i < pdao.LENGTH; i++){
 			points.get(i).weekday = 3;// 1- sábado, 2- domingo, 3- segunda, 4-terça, 5-quarta 
 			points.get(i).studentId = 369584;
 			if(points.get(i).classfield == false){
-				expansion = expandCluster(points.get(i),clusterId,minPoints,eps);
+				expansion = expandCoreCluster(points.get(i),clusterId,minPoints,eps);
 				if(expansion == true){
 					clusterId++;
 				}
 			}
 		}
+		
+		for(int j=0; j<pdao.LENGTH; j++){
+			if(points.get(j).iscore == false){//para do ponto borda
+				points.get(j).cluster = findCoreClosestPoint(points.get(j), neighborsPoint(points.get(j), eps));
+			}
+		}
+			
 		System.out.println(clusterId);
 		
 	}
 	
-	private boolean expandCluster(Point p, int clusterId, int minPoint, double eps){
+	private boolean expandCoreCluster(Point p, int clusterId, int minPoint, double eps){
 		ArrayList<Point> neighbors = neighborsPoint(p,eps);//vizinhos
 		if(neighbors.size() < minPoint){
 			p.cluster = -1;//Outlier
@@ -43,10 +52,6 @@ public class Clustering {
 			p.cluster = clusterId; //p é atribuído a um cluster
 			p.classfield = true; // p é marcado como visitado
 			p.iscore = true; // p é marcado como um core point
-			for (Point point : neighbors) { //todos os vizinhos são atribuidos ao cluster com o id = clusterId
-				point.cluster = clusterId;
-			}
-			neighbors.remove(p);
 			
 			for (int i = 0; i < neighbors.size(); i++) { //os vizinhos de p são testados
 				Point point = neighbors.get(i);
@@ -55,14 +60,13 @@ public class Clustering {
 					ArrayList<Point> neigh = neighborsPoint(point,eps);// consultando os vizinhos dos vizinhos de p					
 					if(neigh.size() >= minPoint){
 						point.iscore = true; //marcado como core point
-						for (Point point2: neigh) {
-							if(point2.classfield == false  || point2.cluster == -1){//testa se ainda não foi vizitado ou se foi marcado como um outlier em outras interações
-								if(point2.classfield == false){
-									point2.classfield = true; //marco como visitado
-									neighbors.add(point2);
-								}
-								point2.cluster = clusterId;
-								point2.iscore = false;
+						point.cluster = clusterId;
+						for (Point point2 : neigh) {
+							if(point2.classfield == false){
+								neighbors.add(point2);
+							}
+							if(point2.classfield == false && point2.cluster == -1){
+								point2.iscore = false; //marcado como bordar
 							}
 						}
 					}
@@ -70,6 +74,23 @@ public class Clustering {
 			}
 			return true;
 		}
+	}
+	
+	private int findCoreClosestPoint(Point p, ArrayList<Point> neighborsP){
+		ArrayList<Point> corePoints = new ArrayList<Point>();
+		for (Point point : corePoints) {
+			if(point.iscore)
+				corePoints.add(point);
+		}
+		if(corePoints.size() > 0){
+			Point closer = corePoints.get(0);
+			for (Point core : corePoints) {
+				if(euclideanDistance(p, closer) > euclideanDistance(p, core))
+					closer = core;
+			}
+			return closer.cluster; 
+		}
+		return -1;
 	}
 	
 	//Visinhos de 'p'
@@ -88,9 +109,10 @@ public class Clustering {
 		return Math.sqrt(Math.pow(source.longitude - target.longitude,2)+ Math.pow(source.latitude - target.latitude,2));
 	}
 	
+	//Gerar arquivo de saída
 	private void writeCSV(){
 		try{
-			PrintWriter writer = new PrintWriter("points.csv", "UTF-8");
+			PrintWriter writer = new PrintWriter("pointsV2.csv", "UTF-8");
 			writer.println("student_id;id_taxista;weekday;latitude;longitude;cluster;iscore");
 			for (Point p : points) {
 				writer.println(p.studentId+";"+p.idTaxiDriver+";"+p.weekday+";"+p.latitude+";"+p.longitude+";"+p.cluster+";"+p.iscore);
@@ -103,7 +125,7 @@ public class Clustering {
 	
 	
 	public static void main(String[] args) {
-		Clustering c = new Clustering();
+		ClusteringV2 c = new ClusteringV2();
 		long start = System.currentTimeMillis();
 		c.dbSCAN(10,0.00301);
 		long elapsed = System.currentTimeMillis() - start;
