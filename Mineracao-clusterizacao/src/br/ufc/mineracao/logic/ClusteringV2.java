@@ -14,7 +14,7 @@ public class ClusteringV2 {
 	
 	public void dbSCAN(int minPoints, double eps){
 		PointDAO pdao = new PointDAO();
-		points = pdao.queryPointByHour("08:00:00", "09:00:00", "2008-02-06");
+		points = pdao.queryPointByHour("08:00:00", "08:10:00", "2008-02-06");
 		boolean expansion;
 		int clusterId = 1;
 		

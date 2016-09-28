@@ -14,12 +14,12 @@ public class Clustering {
 	
 	public void dbSCAN(int minPoints, double eps){
 		PointDAO pdao = new PointDAO();
-		points = pdao.queryPointByHour("08:00:00", "09:00:00", "2008-02-06");
+		points = pdao.queryPointByHour("09:00:00", "10:00:00", "2008-02-03");
 		boolean expansion;
 		int clusterId = 1;
 		
 		for(int i=0; i < pdao.LENGTH; i++){
-			points.get(i).weekday = 3;// 1- sábado, 2- domingo, 3- segunda, 4-terça, 5-quarta 
+			points.get(i).weekday = 2;// 1- sábado, 2- domingo, 3- segunda, 4-terça, 5-quarta 
 			points.get(i).studentId = 369584;
 			if(points.get(i).classfield == false){
 				expansion = expandCluster(points.get(i),clusterId,minPoints,eps);
@@ -90,7 +90,7 @@ public class Clustering {
 	
 	private void writeCSV(){
 		try{
-			PrintWriter writer = new PrintWriter("points.csv", "UTF-8");
+			PrintWriter writer = new PrintWriter("points_dom_09_10.csv", "UTF-8");
 			writer.println("student_id;id_taxista;weekday;latitude;longitude;cluster;iscore");
 			for (Point p : points) {
 				writer.println(p.studentId+";"+p.idTaxiDriver+";"+p.weekday+";"+p.latitude+";"+p.longitude+";"+p.cluster+";"+p.iscore);
