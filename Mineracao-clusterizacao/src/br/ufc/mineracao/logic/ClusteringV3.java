@@ -11,73 +11,87 @@ import br.ufc.mineracao.model.Point;
 public class ClusteringV3 {
 	
 	private List<Point> points = null;
-	private int k = 0;
-	
 	
 	public void dbSCAN(int minPoints, double eps){
 		PointDAO pdao = new PointDAO();
-		points = pdao.queryPointByHour("08:00:00", "09:00:00", "2008-02-06");
-		int clusterId = 1;
+		points = pdao.queryPointByHour("09:00:00", "10:00:00", "2008-02-04");
+		int clusterId = 0;
+		double qtd = 0;
 		
 		System.out.println("Tamanho: "+pdao.LENGTH);
 		
-		ArrayList<Point> neighbord = null;
 		for (Point point : points) {
-			if(point.classfield == false){
-				k++;
-				System.out.println(k);
-				point.classfield = true;
-				neighbord =neighborsPoint(point, eps);
-				if(neighbord.size() < minPoints){
-					point.cluster = -1;
+			if(point.visited == false){
+				point.visited = true;
+				ArrayList<Point> neighbord = new ArrayList<Point>(); 
+				int count = neighborsPoint(point, eps, neighbord);
+				//System.out.println("Quantidade de taxisitas diferentes: "+count);
+				qtd += neighbord.size();
+				if(count < minPoints){
+					point.cluster = Point.OUTLIER;
 				}else{
-					point.cluster = clusterId;
-					point.iscore = true;
-					expandCluster(point, clusterId, minPoints, eps);
+					//System.out.println("Id do cluester: "+clusterId);
 					clusterId++;
+					point.cluster = clusterId;
+					point.type = Point.CORE_POINT;
+					expandCluster(neighbord, clusterId, minPoints, eps);
 				}
 			}
 		}
 			
 		System.out.println(clusterId);
+		System.out.println("Média: "+qtd/pdao.LENGTH);
 		
 	}
 	
-	private void expandCluster(Point p, int clusterId, int minPoint, double eps){
-		ArrayList<Point> neighbors = neighborsPoint(p, eps);
-		Point pn = null;
-		for (int i=0; i<neighbors.size();i++) {
-			pn = neighbors.get(i);
-			if (pn.classfield == false) {
-				pn.classfield = true;
-				ArrayList<Point> neighborsOfPoint = neighborsPoint(pn, eps);
-				if(neighborsOfPoint.size() >= minPoint){
-					pn.iscore = true;
-					neighbors.add(pn);
+	private void expandCluster(ArrayList<Point> neighbors, int clusterId, int minPoint, double eps){
+		int qtd = 0;
+		for (int i=0; i < neighbors.size();i++) {
+			//System.out.println("Qtd atual: "+neighbors.size());
+			Point pn = neighbors.get(i);
+			if (pn.visited == false) {
+				pn.visited = true;
+				ArrayList<Point> neighborsOfPoint = new ArrayList<Point>(); 
+				int count = neighborsPoint(pn, eps, neighborsOfPoint);
+				qtd += count;
+				if(count >= minPoint){
+					pn.type = Point.CORE_POINT;
+					for (Point point : neighborsOfPoint) {
+						neighbors.add(point);
+					}
+					//System.out.println("Quantidade de vizinhos distintos: "+count);
+					//System.out.println("Quantidade de vizinhos sem distinção: "+neighborsOfPoint.size());
+					//System.out.println("Qtd com os vizinhos: "+neighbors.size());
 				}else{
-					pn.iscore = false;
+					pn.type = Point.BORDER_POINT;
 				}
 				
-				if(pn.cluster == -1){
+				if(pn.cluster == Point.OUTLIER){
 					pn.cluster = clusterId;
 				}
-				
-				k++;
-				System.out.println(k);
 			}
 		}
+		System.out.println("Quantidade: "+qtd);
 	}
 	
 	
+	
 	//Visinhos de 'p'
-	private ArrayList<Point> neighborsPoint(Point p, double eps){
-		ArrayList<Point> neighbors = new ArrayList<Point>();
+	private int neighborsPoint(Point p, double eps, ArrayList<Point> neighbors){
 		for (Point point : points) {
-			if(euclideanDistance(p, point) <= eps){
+			//if(p.idTaxiDriver != point.idTaxiDriver)
+			if(euclideanDistance(p, point) < eps){
 				neighbors.add(point);
 			}
 		}
-		return neighbors;
+		
+		ArrayList<Point> distincts = new ArrayList<Point>();
+		for (Point point : neighbors) {
+			if(!contains(distincts, point)){
+				distincts.add(point);
+			}
+		}
+		return distincts.size(); //qtd de taxistas ao redor;
 	}
 	
 	//Distancia euclidiana
@@ -85,13 +99,21 @@ public class ClusteringV3 {
 		return Math.sqrt(Math.pow((source.longitude - target.longitude),2)+ Math.pow((source.latitude - target.latitude),2));
 	}
 	
+	private boolean contains(ArrayList<Point> list, Point p){
+		for (Point point : list) {
+			if(point.idTaxiDriver == p.idTaxiDriver)
+				return true;
+		}
+		return false;
+	}
+	
 	//Gerar arquivo de saída
 	private void writeCSV(){
 		try{
-			PrintWriter writer = new PrintWriter("pointsV6.csv", "UTF-8");
+			PrintWriter writer = new PrintWriter("points_dados_09_10(4).csv", "UTF-8");
 			writer.println("student_id;id_taxista;weekday;latitude;longitude;cluster;iscore");
 			for (Point p : points) {
-				writer.println(p.studentId+";"+p.idTaxiDriver+";"+p.weekday+";"+p.latitude+";"+p.longitude+";"+p.cluster+";"+p.iscore);
+				writer.println(p.studentId+";"+p.idTaxiDriver+";"+p.weekday+";"+p.latitude+";"+p.longitude+";"+p.cluster+";"+p.type);
 			}
 			writer.close();
 		}catch (Exception e) {
@@ -103,7 +125,7 @@ public class ClusteringV3 {
 	public static void main(String[] args) {
 		ClusteringV3 c = new ClusteringV3();
 		long start = System.currentTimeMillis();
-		c.dbSCAN(10,0.00301);
+		c.dbSCAN(40,0.005);
 		long elapsed = System.currentTimeMillis() - start;
 		System.out.println(elapsed/1000+" segundos");
 		System.out.println("Gravando csv...");

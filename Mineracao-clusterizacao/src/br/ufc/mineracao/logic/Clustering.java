@@ -21,7 +21,7 @@ public class Clustering {
 		for(int i=0; i < pdao.LENGTH; i++){
 			points.get(i).weekday = 2;// 1- sábado, 2- domingo, 3- segunda, 4-terça, 5-quarta 
 			points.get(i).studentId = 369584;
-			if(points.get(i).classfield == false){
+			if(points.get(i).visited == false){
 				expansion = expandCluster(points.get(i),clusterId,minPoints,eps);
 				if(expansion == true){
 					clusterId++;
@@ -36,13 +36,13 @@ public class Clustering {
 		ArrayList<Point> neighbors = neighborsPoint(p,eps);//vizinhos
 		if(neighbors.size() < minPoint){
 			p.cluster = -1;//Outlier
-			p.classfield = true;
-			p.iscore = false;
+			p.visited = true;
+			p.type = Point.OUTLIER;
 			return false;
 		}else{
 			p.cluster = clusterId; //p é atribuído a um cluster
-			p.classfield = true; // p é marcado como visitado
-			p.iscore = true; // p é marcado como um core point
+			p.visited = true; // p é marcado como visitado
+			p.type = Point.CORE_POINT; // p é marcado como um core point
 			for (Point point : neighbors) { //todos os vizinhos são atribuidos ao cluster com o id = clusterId
 				point.cluster = clusterId;
 			}
@@ -51,18 +51,18 @@ public class Clustering {
 			for (int i = 0; i < neighbors.size(); i++) { //os vizinhos de p são testados
 				Point point = neighbors.get(i);
 				if(point.idTaxiDriver != p.idTaxiDriver ){
-					point.classfield = true; //marcado como visitado
+					point.visited = true; //marcado como visitado
 					ArrayList<Point> neigh = neighborsPoint(point,eps);// consultando os vizinhos dos vizinhos de p					
 					if(neigh.size() >= minPoint){
-						point.iscore = true; //marcado como core point
+						point.type = Point.CORE_POINT; //marcado como core point
 						for (Point point2: neigh) {
-							if(point2.classfield == false  || point2.cluster == -1){//testa se ainda não foi vizitado ou se foi marcado como um outlier em outras interações
-								if(point2.classfield == false){
-									point2.classfield = true; //marco como visitado
+							if(point2.visited == false  || point2.cluster == -1){//testa se ainda não foi vizitado ou se foi marcado como um outlier em outras interações
+								if(point2.visited == false){
+									point2.visited = true; //marco como visitado
 									neighbors.add(point2);
 								}
 								point2.cluster = clusterId;
-								point2.iscore = false;
+								point2.type = Point.BORDER_POINT;
 							}
 						}
 					}
@@ -93,7 +93,7 @@ public class Clustering {
 			PrintWriter writer = new PrintWriter("points_dom_09_10.csv", "UTF-8");
 			writer.println("student_id;id_taxista;weekday;latitude;longitude;cluster;iscore");
 			for (Point p : points) {
-				writer.println(p.studentId+";"+p.idTaxiDriver+";"+p.weekday+";"+p.latitude+";"+p.longitude+";"+p.cluster+";"+p.iscore);
+				writer.println(p.studentId+";"+p.idTaxiDriver+";"+p.weekday+";"+p.latitude+";"+p.longitude+";"+p.cluster+";"+p.type);
 			}
 			writer.close();
 		}catch (Exception e) {

@@ -23,7 +23,7 @@ public class ClusteringV2 {
 		for(int i=0; i < pdao.LENGTH; i++){
 			points.get(i).weekday = 3;// 1- sábado, 2- domingo, 3- segunda, 4-terça, 5-quarta 
 			points.get(i).studentId = 369584;
-			if(points.get(i).classfield == false){
+			if(points.get(i).visited == false){
 				expansion = expandCoreCluster(points.get(i),clusterId,minPoints,eps);
 				if(expansion == true){
 					clusterId++;
@@ -32,7 +32,7 @@ public class ClusteringV2 {
 		}
 		
 		for(int j=0; j<pdao.LENGTH; j++){
-			if(points.get(j).iscore == false){//para do ponto borda
+			if(points.get(j).type == Point.BORDER_POINT){//para do ponto borda
 				points.get(j).cluster = findCoreClosestPoint(points.get(j), neighborsPoint(points.get(j), eps));
 			}
 		}
@@ -45,28 +45,28 @@ public class ClusteringV2 {
 		ArrayList<Point> neighbors = neighborsPoint(p,eps);//vizinhos
 		if(neighbors.size() < minPoint){
 			p.cluster = -1;//Outlier
-			p.classfield = true;
-			p.iscore = false;
+			p.visited = true;
+			p.type = Point.BORDER_POINT;
 			return false;
 		}else{
 			p.cluster = clusterId; //p é atribuído a um cluster
-			p.classfield = true; // p é marcado como visitado
-			p.iscore = true; // p é marcado como um core point
+			p.visited = true; // p é marcado como visitado
+			p.type = Point.CORE_POINT; // p é marcado como um core point
 			
 			for (int i = 0; i < neighbors.size(); i++) { //os vizinhos de p são testados
 				Point point = neighbors.get(i);
 				if(point.idTaxiDriver != p.idTaxiDriver ){
-					point.classfield = true; //marcado como visitado
+					point.visited = true; //marcado como visitado
 					ArrayList<Point> neigh = neighborsPoint(point,eps);// consultando os vizinhos dos vizinhos de p					
 					if(neigh.size() >= minPoint){
-						point.iscore = true; //marcado como core point
+						point.type = Point.CORE_POINT; //marcado como core point
 						point.cluster = clusterId;
 						for (Point point2 : neigh) {
-							if(point2.classfield == false){
+							if(point2.visited == false){
 								neighbors.add(point2);
 							}
-							if(point2.classfield == false && point2.cluster == -1){
-								point2.iscore = false; //marcado como bordar
+							if(point2.visited == false && point2.cluster == -1){
+								point2.type = Point.BORDER_POINT; //marcado como bordar
 							}
 						}
 					}
@@ -79,7 +79,7 @@ public class ClusteringV2 {
 	private int findCoreClosestPoint(Point p, ArrayList<Point> neighborsP){
 		ArrayList<Point> corePoints = new ArrayList<Point>();
 		for (Point point : corePoints) {
-			if(point.iscore)
+			if(point.type == Point.CORE_POINT)
 				corePoints.add(point);
 		}
 		if(corePoints.size() > 0){
@@ -115,7 +115,7 @@ public class ClusteringV2 {
 			PrintWriter writer = new PrintWriter("pointsV2.csv", "UTF-8");
 			writer.println("student_id;id_taxista;weekday;latitude;longitude;cluster;iscore");
 			for (Point p : points) {
-				writer.println(p.studentId+";"+p.idTaxiDriver+";"+p.weekday+";"+p.latitude+";"+p.longitude+";"+p.cluster+";"+p.iscore);
+				writer.println(p.studentId+";"+p.idTaxiDriver+";"+p.weekday+";"+p.latitude+";"+p.longitude+";"+p.cluster+";"+p.type);
 			}
 			writer.close();
 		}catch (Exception e) {
