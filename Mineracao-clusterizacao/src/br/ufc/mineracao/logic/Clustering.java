@@ -2,6 +2,7 @@ package br.ufc.mineracao.logic;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import br.ufc.mineracao.dao.PointDAO;
@@ -11,86 +12,101 @@ public class Clustering {
 	
 	private List<Point> points = null;
 	
-	
 	public void dbSCAN(int minPoints, double eps){
 		PointDAO pdao = new PointDAO();
-		points = pdao.queryPointByHour("09:00:00", "10:00:00", "2008-02-03");
-		boolean expansion;
-		int clusterId = 1;
+		points = pdao.queryPointByHour("09:00:00", "10:00:00", "2008-02-04");
+		int clusterId = 0;
 		
-		for(int i=0; i < pdao.LENGTH; i++){
-			points.get(i).weekday = 2;// 1- sábado, 2- domingo, 3- segunda, 4-terça, 5-quarta 
-			points.get(i).studentId = 369584;
-			if(points.get(i).visited == false){
-				expansion = expandCluster(points.get(i),clusterId,minPoints,eps);
-				if(expansion == true){
+		System.out.println("Tamanho: "+pdao.LENGTH);
+		
+		for (Point point : points) {
+			if(point.visited == false){
+				point.visited = true;
+				
+				ArrayList<Point> neighbord = new ArrayList<Point>(); 
+				int count = neighborsPoint(point, eps, neighbord);
+				
+				if(count < minPoints){
+					point.cluster = Point.OUTLIER;
+				}else{
 					clusterId++;
+					point.cluster = clusterId;
+					point.type = Point.CORE_POINT;
+					expandCluster(neighbord, clusterId, minPoints, eps);
 				}
 			}
 		}
-		System.out.println(clusterId);
+			
+		System.out.println("Quantidade de clusters: "+clusterId);
 		
 	}
 	
-	private boolean expandCluster(Point p, int clusterId, int minPoint, double eps){
-		ArrayList<Point> neighbors = neighborsPoint(p,eps);//vizinhos
-		if(neighbors.size() < minPoint){
-			p.cluster = -1;//Outlier
-			p.visited = true;
-			p.type = Point.OUTLIER;
-			return false;
-		}else{
-			p.cluster = clusterId; //p é atribuído a um cluster
-			p.visited = true; // p é marcado como visitado
-			p.type = Point.CORE_POINT; // p é marcado como um core point
-			for (Point point : neighbors) { //todos os vizinhos são atribuidos ao cluster com o id = clusterId
-				point.cluster = clusterId;
-			}
-			neighbors.remove(p);
+	private void expandCluster(ArrayList<Point> neighbors, int clusterId, int minPoint, double eps){
+		System.out.println("Expandindo cluster "+clusterId+" ...");
+		
+		for (Point point : neighbors) {
+			point.cluster = clusterId;
+		}
+		
+		while(neighbors.size() > 0){
+			Point p = neighbors.get(0);
+			neighbors.remove(0);
 			
-			for (int i = 0; i < neighbors.size(); i++) { //os vizinhos de p são testados
-				Point point = neighbors.get(i);
-				if(point.idTaxiDriver != p.idTaxiDriver ){
-					point.visited = true; //marcado como visitado
-					ArrayList<Point> neigh = neighborsPoint(point,eps);// consultando os vizinhos dos vizinhos de p					
-					if(neigh.size() >= minPoint){
-						point.type = Point.CORE_POINT; //marcado como core point
-						for (Point point2: neigh) {
-							if(point2.visited == false  || point2.cluster == -1){//testa se ainda não foi vizitado ou se foi marcado como um outlier em outras interações
-								if(point2.visited == false){
-									point2.visited = true; //marco como visitado
-									neighbors.add(point2);
-								}
-								point2.cluster = clusterId;
-								point2.type = Point.BORDER_POINT;
-							}
-						}
-					}
+			if(p.visited == false){
+				p.visited = true;
+				ArrayList<Point> neighborsOfPoint = new ArrayList<Point>(); 
+				int count = neighborsPoint(p, eps, neighborsOfPoint);
+				
+				for (Point point : neighborsOfPoint) {
+					point.cluster = clusterId;
 				}
-			}
-			return true;
+				
+				if(count >= minPoint){
+					p.type = Point.CORE_POINT;
+					neighbors.addAll(neighborsOfPoint);
+				}else{
+					p.type = Point.BORDER_POINT;
+				}	
+			}	
 		}
 	}
+	
+	
 	
 	//Visinhos de 'p'
-	private ArrayList<Point> neighborsPoint(Point p, double eps){
-		ArrayList<Point> neighbors = new ArrayList<Point>();
+	private int neighborsPoint(Point p, double eps, ArrayList<Point> neighbors){
 		for (Point point : points) {
-			if(euclideanDistance(p, point) <= eps){
+			if(euclideanDistance(p, point) < eps){
 				neighbors.add(point);
 			}
 		}
-		return neighbors;
+		
+		ArrayList<Point> distincts = new ArrayList<Point>();
+		for (Point point : neighbors) {
+			if(!contains(distincts, point)){
+				distincts.add(point);
+			}
+		}
+		return distincts.size();
 	}
 	
 	//Distancia euclidiana
 	private double euclideanDistance(Point source, Point target){
-		return Math.sqrt(Math.pow(source.longitude - target.longitude,2)+ Math.pow(source.latitude - target.latitude,2));
+		return Math.sqrt(Math.pow((source.longitude - target.longitude),2)+ Math.pow((source.latitude - target.latitude),2));
 	}
 	
+	private boolean contains(ArrayList<Point> list, Point p){
+		for (Point point : list) {
+			if(point.idTaxiDriver == p.idTaxiDriver)
+				return true;
+		}
+		return false;
+	}
+	
+	//Gerar arquivo de saída
 	private void writeCSV(){
 		try{
-			PrintWriter writer = new PrintWriter("points_dom_09_10.csv", "UTF-8");
+			PrintWriter writer = new PrintWriter("points_dados_09_10(4).csv", "UTF-8");
 			writer.println("student_id;id_taxista;weekday;latitude;longitude;cluster;iscore");
 			for (Point p : points) {
 				writer.println(p.studentId+";"+p.idTaxiDriver+";"+p.weekday+";"+p.latitude+";"+p.longitude+";"+p.cluster+";"+p.type);
@@ -105,7 +121,7 @@ public class Clustering {
 	public static void main(String[] args) {
 		Clustering c = new Clustering();
 		long start = System.currentTimeMillis();
-		c.dbSCAN(10,0.00301);
+		c.dbSCAN(40,0.005);
 		long elapsed = System.currentTimeMillis() - start;
 		System.out.println(elapsed/1000+" segundos");
 		System.out.println("Gravando csv...");
