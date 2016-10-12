@@ -17,11 +17,11 @@ public class GraphDAO {
 	private Statement stm;
 	private ResultSet rs;
 	
-	public ArrayList<Edge> findVertices(int idVertex){
+	public ArrayList<Edge> findRoads(){
 		try {
 			con = ConnectionFactory.getConnection();
 			stm = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
-			rs = stm.executeQuery("SELECT * FROM roads WHERE id_source = "+idVertex);
+			rs = stm.executeQuery("SELECT * FROM roads ");
 			
 			ArrayList<Edge> edges = new ArrayList<Edge>();
 			rs.beforeFirst();

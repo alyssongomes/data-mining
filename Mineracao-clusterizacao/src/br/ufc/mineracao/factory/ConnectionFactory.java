@@ -10,7 +10,6 @@ public class ConnectionFactory {
 	public static Connection getConnection(){
 		try{
 			connection = DriverManager.getConnection("jdbc:postgresql://localhost/db_taxis", "postgres", "postgres");
-			System.out.println("Conectou!");
 			return connection;
 		}catch(Exception ex){
 			ex.printStackTrace();

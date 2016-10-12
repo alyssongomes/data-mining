@@ -27,6 +27,7 @@ public class PointDAO {
 			rs.beforeFirst();
 			while(rs.next()){
 				Point p = new Point(rs.getInt("id_taxista"), rs.getDouble("longitude"), rs.getDouble("latitude"));
+				p.studentId = 369584;
 				points.add(p);
 				LENGTH++;
 			}

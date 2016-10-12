@@ -1,6 +1,8 @@
 package br.ufc.mineracao.logic;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.PriorityQueue;
 
 import br.ufc.mineracao.dao.GraphDAO;
 import br.ufc.mineracao.model.Edge;
@@ -8,51 +10,52 @@ import br.ufc.mineracao.model.Vertex;
 
 public class Dijkstra {
 	
-	private int INFINITY = Integer.MAX_VALUE;
-	private ArrayList<Vertex> verteces = null;
-	private ArrayList<Vertex> minPath = new ArrayList<Vertex>();
-	
-	public void dijkstra(int idSouce, int idTarget){
-		GraphDAO gdao = new GraphDAO();
+	private GraphDAO gdao;
+	private double INFINITY = Double.MAX_VALUE;
+	private ArrayList<Vertex> verteces;
+	private ArrayList<Edge> edges;
+	private HashMap<Integer, Double> distances;
+
+	public Dijkstra(){
+		gdao = new GraphDAO();
 		verteces = gdao.findAllVertices();
+		edges = gdao.findRoads();
+	}
+	
+	public double dijkstra(int idSouce, int idTarget){
 		
+		distances = new HashMap<>();
 		for (Vertex vertex : verteces) {
-			if(vertex.id != idSouce){
-				vertex.estimate = INFINITY;
-				vertex.ancestor = null;
-			}else{
-				vertex.estimate = 0;
-			}
+			distances.put(vertex.id, INFINITY);
 		}
 		
-		Vertex ver = findVertex(idSouce);
-		ver.ancestor = ver;
+		PriorityQueue<Vertex> queue = new PriorityQueue<>();
 		
-		ArrayList<Vertex> open = verteces; 
-		while (open.size() != 0) {
-			Vertex u = extractMin(open);
-			minPath.add(new Vertex(u.id, u.longitude, u.latitude));
-			remove(open,u);
-			
-			for(Edge e: gdao.findVertices(u.id)){
-				Vertex v = findVertex(e.target); 
-				if (v.estimate > u.estimate + e.cost) {
-					v.estimate = u.estimate +e.cost;
-					v.ancestor = u;
+		
+		Vertex ver = findVertex(idSouce);
+		ver.id = idSouce;
+		ver.estimate = 0.0;
+		distances.put(ver.id, 0.0);
+		queue.add(ver);
+		
+		while (!queue.isEmpty()) {
+			Vertex u = queue.poll();
+			if(u.open){
+				u.open = false;
+				double uest = distances.get(u.id);
+				for(Edge e: findVertices(u.id)){
+					Vertex v = findVertex(e.target);
+					double vest = distances.get(v.id);
+					if (vest > (uest + e.cost)) {
+						v.estimate = (e.cost+uest);
+						distances.put(v.id, (uest + e.cost));
+						queue.add(v);
+					}
 				}
 			}
 		}
 		
-		
-	}
-	
-	public Vertex extractMin(ArrayList<Vertex> verteces){
-		Vertex v = verteces.get(0);
-		for (Vertex vertex : verteces) {
-			if(vertex.estimate < v.estimate)
-				v = vertex;
-		}
-		return v;
+		return distances.get(idTarget);
 	}
 	
 	public Vertex findVertex(int id){
@@ -63,11 +66,13 @@ public class Dijkstra {
 		return null;
 	}
 	
-	public void remove(ArrayList<Vertex> verteces, Vertex v){
-		for (int i =0; i< verteces.size(); i++) {
-			if(verteces.get(i).id == v.id)
-				verteces.remove(i);
+	private ArrayList<Edge> findVertices(int idVertex){
+		ArrayList<Edge> egs = new ArrayList<Edge>();
+		for (Edge edge : edges) {
+			if(edge.source == idVertex)
+				egs.add(edge);
 		}
+		return egs;
 	}
 	
 	

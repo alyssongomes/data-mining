@@ -11,15 +11,23 @@ import br.ufc.mineracao.model.Point;
 public class Clustering {
 	
 	private List<Point> points = null;
+	private Dijkstra dijkstra;
 	
-	public void dbSCAN(int minPoints, double eps){
-		PointDAO pdao = new PointDAO();
-		points = pdao.queryPointByHour("09:00:00", "10:00:00", "2008-02-04");
+	public Clustering(){
+		dijkstra = new Dijkstra();
+	}
+	
+	public void dbSCAN(int minPoints, double eps, ArrayList<Point> clusters){
+		//PointDAO pdao = new PointDAO();
+		//points = pdao.queryPointByHour("09:00:00", "10:00:00", "2008-02-06");
+		points = clusters;
 		int clusterId = 0;
 		
-		System.out.println("Tamanho: "+pdao.LENGTH);
+		//System.out.println("Tamanho: "+pdao.LENGTH);
+		System.out.println("Tamanho: "+points.size());
 		
 		for (Point point : points) {
+			//point.weekday = 3; /* 1-seg; 2-ter; 3-qua; 4-qui; 5-sex */
 			if(point.visited == false){
 				point.visited = true;
 				
@@ -76,7 +84,10 @@ public class Clustering {
 	//Visinhos de 'p'
 	private int neighborsPoint(Point p, double eps, ArrayList<Point> neighbors){
 		for (Point point : points) {
-			if(euclideanDistance(p, point) < eps){
+			//if(euclideanDistance(p, point) < eps){
+			double distance = dijkstra.dijkstra(p.idVertex, point.idVertex);
+			if( distance < eps){
+				//System.out.println("Distancia :"+String.format("%.6f", distance)+"; eps= "+eps);
 				neighbors.add(point);
 			}
 		}
@@ -104,12 +115,12 @@ public class Clustering {
 	}
 	
 	//Gerar arquivo de saída
-	private void writeCSV(){
+	public void writeCSV(String fileName, ArrayList<Point> list){
 		try{
-			PrintWriter writer = new PrintWriter("points_dados_09_10(4).csv", "UTF-8");
-			writer.println("student_id;id_taxista;weekday;latitude;longitude;cluster;iscore");
-			for (Point p : points) {
-				writer.println(p.studentId+";"+p.idTaxiDriver+";"+p.weekday+";"+p.latitude+";"+p.longitude+";"+p.cluster+";"+p.type);
+			PrintWriter writer = new PrintWriter(fileName, "UTF-8");
+			writer.println("student_id;id_taxista;weekday;latitude;longitude;cluster;iscore;id_vertice");
+			for (Point p : list) {
+				writer.println(p.studentId+";"+p.idTaxiDriver+";"+p.weekday+";"+p.latitude+";"+p.longitude+";"+p.cluster+";"+p.type+";"+p.idVertex);
 			}
 			writer.close();
 		}catch (Exception e) {
@@ -118,15 +129,15 @@ public class Clustering {
 	}
 	
 	
-	public static void main(String[] args) {
+	/*public static void main(String[] args) {
 		Clustering c = new Clustering();
 		long start = System.currentTimeMillis();
 		c.dbSCAN(40,0.005);
 		long elapsed = System.currentTimeMillis() - start;
-		System.out.println(elapsed/1000+" segundos");
+		System.out.println((elapsed/1000.0)/3600.0+" horas");
 		System.out.println("Gravando csv...");
 		c.writeCSV();
 		System.out.println("CSV gravado!");
-	}
+	}*/
 	
 }
