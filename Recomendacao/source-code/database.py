@@ -29,7 +29,10 @@ def allMovies():
 def findMovie(movieid):
     #c.execute('SELECT m.movieid,m.title,m.genres,m.director,m.actors, avg(r.rating) FROM ratings r,movies m WHERE r.movieid = '+str(movieid)+' AND m.movieid = '+str(movieid)+' GROUP BY m.movieid,m.title,m.genres,m.director,m.actors')
     #return c.fetchall()
-    return fake[movieid]
+    for m in fake:
+        if m[0] == movieid:
+            return m
+    return None
 
 def findAvgUser(userid):
     #c.execute('SELECT * FROM user_rating_avg WHERE userid = '+userid)
@@ -39,7 +42,7 @@ def findAvgUser(userid):
 def findMoviesUser(userid):
     #c.execute('SELECT * FROM ratings r, movies_full m WHERE r.movieid = m.movieid AND r.userid = 1')
     #c.fetchall()
-    return movieUserFake 
+    return movieUserFake
 
 
 #row = findMovie(1)
