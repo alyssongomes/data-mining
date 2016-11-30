@@ -1,42 +1,50 @@
+
 #-*- coding:utf-8 -*-
 import copy
-import bisect
+import time
 from database import *
 from profile import *
+from decimal import *
 
-matriz = [['movieid','Action','Adventure','Animation','Children','Comedy','Crime','Documentary','Drama','Fantasy','Film-Noir','Horror','Musical','Mystery','Romance','Sci-Fi','Thriller','War','Western','(no genres listed)']]
-rows = allMovies()
+matriz = []
+#matriz = [["movieid","Action","Adventure","Animation","Children","Comedy","Crime","Documentary","Drama","Fantasy","Film-Noir","Horror","Musical","Mystery","Romance","Sci-Fi","Thriller","War","Western","(no genres listed)"]]
+#actors = [] -> [19:51871]
+#directors = [] -> [51872:64958]
 
 #Constroi a matriz com todas as caracterista dos filmes
 def buildMatriz():
+    matriz.append(loadMatriz())
+    '''rows = allMovies()
     for r in rows:
         #Directors
         for d in r[3].split(','):
-            if len(matriz) == 0:
-                matriz.append([d])
+            if len(directors) == 0:
+                #directors.append([d])
+                directors.append(d)
             else:
-                if d not in matriz[0]:
-                    matriz[0].append(d)
+                if d not in directors:
+                    directors.append(d)
 
         #Actor
         for a in r[4].split(','):
-            if len(matriz) == 0:
-                matriz.append([a])
+            if len(actors) == 0:
+                actors.append(a)
             else:
-                if a not in matriz[0]:
-                    matriz[0].append(a)
+                if a not in actors:
+                    actors.append(a)
 
-    matriz[0].append('avg')
+    matriz[0] = matriz[0] + actors + directors
+    matriz[0].append('avg')'''
 
-#Mapeia cada filme e compara com o perfil do usuário
-#Recomendar N filmes para o usuário
-def recommended(profileUser,n = 5):
+#Mapeia cada filme e compara com o perfil do usuário, e recomenda N filmes para o usuário
+def recommended(profileUser,userId,n = 5):
+
+    rows = findMoviesNotAssited(profileUser,matriz[0][1:],userId)
 
     movies = []
 
     #popular com gêneros, diretores e atores
     for r in xrange(0,len(rows)):
-        print r,
 
         #Inicializar a linha de mapeamento
         matriz.append([])
@@ -68,35 +76,39 @@ def recommended(profileUser,n = 5):
 
         movie = matriz.pop()
         movies.append((distanceCos(profileUser,movie[1:]),movie[0]))
-    movies.sort()
+    #movies.sort(reverse = True)
     return movies[0:n]
-
-def verify(lista):
-    v = []
-    for i in xrange(0,len(lista)):
-        if i >= 1 and lista[i] > 0:
-            v.append(i)
-    return v
 
 
 if __name__ == '__main__':
-    x = [(0.0, 33573L), (0.0, 69565L), (0.0, 69864L), (0.0, 80226L), (0.0, 89100L), (0.0, 89215L), (0.0, 90493L), (0.0, 92268L), (0.0, 92516L), (0.0, 94076L)]
+    #x = [(0.0, 33573L), (0.0, 69565L), (0.0, 69864L), (0.0, 80226L), (0.0, 89100L), (0.0, 89215L), (0.0, 90493L), (0.0, 92268L), (0.0, 92516L), (0.0, 94076L)]
+    userid = 1
+
     print "begin building matriz..."
-    #buildMatriz()
+    buildMatriz()
     print "ended building matriz..."
 
-    print "begin populate user.."
-    #user = defineProfile(copy.copy(matriz),1)
-    print "ended populate user.."
+    print "begin building profile user.."
+    user = defineProfile(copy.copy(matriz),userid)
+    print "ended building profile user.."
+
+    '''i,j,mapa = 0,1,[]
+    while i < len(user) and j < len(matriz[0]):
+        mapa.append((user[j-1],matriz[0][j]))
+        i += 1
+        j += 1
+
+    mapa.sort(reverse = True)
+    print str(mapa[1:10])'''
 
     print "begin comparating movies..."
-    #movies = recommended(user,10)
+    movies = recommended(user,userid,10)
     print "ended comparating movies..."
-    #print movies
-    for m in x:
+    print movies
+    for m in movies:
         print findMovie(m[1])
 
-'''
+    '''
     print 'Total: '+str(len(matriz[0]))
     for l in matriz:
         print l
@@ -114,4 +126,4 @@ if __name__ == '__main__':
     print verify(user)
 
     print findMovie(movies[0][1])
-'''
+    '''

@@ -1,28 +1,13 @@
 #-*- coding:utf-8 -*-
 import psycopg2
 from decimal import *
-'''
-fake = [
-    (1L, 'Toy Story (1995)', 'Adventure|Animation|Children|Comedy|Fantasy', 'John Lasseter', 'Tom Hanks, Tim Allen, Don Rickles, Jim Varney', Decimal('3.9212395613240769')),
-    (2L, 'Mixed Blood (1984)', 'Action|Drama', 'Paul Morrissey,Bryan Singer', 'Marília Pêra, Richard Ulacia, Linda Kerridge, Geraldine Smith', Decimal('4.9212395613240769')),
-    (3L, 'Buying the Cow (2002)', 'Comedy|Romance', 'Walt Becker,Terry Gilliam', 'Jerry O\'Connell, Bridgette Wilson-Sampras, Ryan Reynolds, Bill Bellamy', Decimal('2.9212395613240769')),
-    (4L, 'Julie Johnson (2001)', 'Drama', 'Bob Gosse,Gabriele Muccino', 'Lili Taylor, Courtney Love, Noah Emmerich, Mischa Barton', Decimal('3.9219895613240769')),
-    (5L, 'Miracles - Mr. Canton and Lady Rose (1989)', 'Action|Comedy|Crime|Drama', 'Jackie Chan', 'Jackie Chan, Anita Mui, Ya-Lei Kuei, Chun Hsiung Ko', Decimal('3.1722395613240769'))
-]
-
-movieUserFake = [
-    (32L,1112484819,4.5,32,'Twelve Monkeys (a.k.a. 12 Monkeys) (1995)','Mystery|Sci-Fi|Thriller','Terry Gilliam','Joseph Melito, Bruce Willis, Jon Seda, Michael Chance','05 Jan 1996',Decimal(3.89805469097377)),
-    (47,1112484727,1.5,47,'Seven (a.k.a. Se7en) (1995)','Mystery|Thriller','Gabriele Muccino','Will Smith, Rosario Dawson, Woody Harrelson, Michael Ealy','19 Dec 2008',Decimal(4.05349256630211)),
-    (50,1112484580,2.5,50,'Usual Suspects, The (1995)','Crime|Mystery|Thriller','Bryan Singer','Stephen Baldwin, Gabriel Byrne, Benicio Del Toro, Kevin Pollak','15 Sep 1995',Decimal(4.33437220780326))
-]
-'''
 
 try:
     con = psycopg2.connect(host='localhost', user='postgres', password='postgres',dbname='db_movies')
+    con.autocommit = True
 except Exception as e:
     print "Cannot to connect!"
 c = con.cursor()
-
 
 
 def allMovies():
@@ -36,3 +21,96 @@ def findMoviesUser(userid):
 def findMovie(movieid):
     c.execute('SELECT * FROM movies_full WHERE movieid='+str(movieid))
     return c.fetchall()
+
+def findMovieMatriz(movieid):
+    c.execute('SELECT * FROM matriz WHERE movieid='+str(movieid))
+    return c.fetchall()
+
+def findAllMoviesMatriz():
+    c.execute('SELECT * FROM matriz')
+    return c.fetchall()
+
+def findMoviesNotAssited(profileUser,matriz,userId):
+
+    p,i = [],0
+    while i < len(matriz)-1:
+        p.append((profileUser[i],matriz[i]))
+        i += 1
+
+    genres = p[:19]
+    actors = p[19:51871]
+    directors = p[51871:64958]
+
+    genres.sort(reverse = True)
+    actors.sort(reverse = True)
+    directors.sort(reverse = True)
+
+    query,j = "SELECT * FROM movies_full WHERE movieid NOT IN (SELECT movieid FROM ratings WHERE userid ="+str(userId)+") and ",0
+    query += "actors like '%"+actors[0][1]+"%' or actors like '%"+actors[1][1]+"%' and "
+    query += "genres like '%"+genres[0][1]+"%' or genres like '%"+genres[1][1]+"%' or genres like '%"+genres[2][1]+"%' and "
+    query += "director like '%"+directors[0][1]+"%'"
+
+    '''while j < len(p):
+        if 0 <= matriz.index(p[j][1]) <= 18:
+            #if j != len(p)-1:
+            if g < 2:
+                g += 1
+                query += " genres like '%"+p[j][1]+"%' or"
+            elif g == 2:
+                query += " genres like '%"+p[j][1]+"%'"
+
+        if 19 <= matriz.index(p[j][1]) <= 51871:
+            if a < 2:
+                a += 1
+                query += " genres like '%"+p[j][1]+"%' or"
+            elif a == 2:
+                query += " genres like '%"+p[j][1]+"%'"
+
+        if 51872 <= matriz.index(p[j][1]) <= 64957:
+            if d < 2:
+                d += 1
+                query += " directors like '%"+p[j][1]+"%' or"
+            elif d == 2:
+                query += " directors like '%"+p[j][1]+"%'"
+        j += 1'''
+
+    print query
+
+    c.execute(query)
+    return c.fetchall()
+
+def insertMatriz(mapped,movieid):
+    mapped = str(mapped).replace('[','').replace(']','')
+    movieid = str(movieid)
+    try:
+        c.execute('INSERT INTO matriz VALUES ('+movieid+',\'{'+mapped+'}\')')
+        return True
+    except Exception as e:
+        print "Cannot insert"+str(e)
+        return False
+
+def insertMap(matriz):
+    i = 0
+    while i < len(matriz):
+        matriz[i] = matriz[i].replace('\'',';')
+        i += 1
+
+    matriz = str(matriz).replace('[','').replace(']','')
+
+    try:
+        c.execute('INSERT INTO map VALUES (ARRAY['+matriz+'])')
+        return True
+    except Exception as e:
+        print "Cannot insert"+str(e)
+        return False
+
+def loadMatriz():
+    c.execute('SELECT * FROM map')
+    matriz = c.fetchall()[0][0]
+    i = 0
+    while i < len(matriz):
+        matriz[i] = matriz[i].decode('string_escape')
+        matriz[i] = matriz[i].replace(';','\'')
+        i += 1
+
+    return matriz
