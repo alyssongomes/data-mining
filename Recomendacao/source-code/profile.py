@@ -7,8 +7,6 @@ from math import *
 def popularMatrizUser(matriz,userId):
     rows = findMoviesUser(userId)
 
-    #print rows[:10]
-
     for i in xrange(0,len(rows)):
         matriz.append([])
         for j in xrange(0,len(matriz[0])):
@@ -58,7 +56,6 @@ def defineProfile(matriz,userId):
 
 #calcular a distancia cosseno entre 2 vetores
 def distanceCos(v1,v2):
-    #print str(len(v1) == len(v2))
     num,n1,n2 = 0,0,0
     for i in xrange(0,len(v1)):
         num += v1[i]*v2[i]
