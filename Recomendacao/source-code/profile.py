@@ -7,7 +7,7 @@ from math import *
 def popularMatrizUser(matriz,userId):
     rows = findMoviesUser(userId)
 
-    print rows[:10]
+    #print rows[:10]
 
     for i in xrange(0,len(rows)):
         matriz.append([])
@@ -66,24 +66,3 @@ def distanceCos(v1,v2):
         n1 += pow(v1[j],2)
         n2 += pow(v2[j],2)
     return num/(sqrt(n1)*sqrt(n2))
-
-
-'''
-user = 1
-
-buildMatriz()
-popularMatrizUser(user)
-
-print 'Caracteristicas'
-print 'Total: '+str(len(matriz[0]))
-for l in matriz:
-    print l
-
-u = defineProfile(user)
-print 'Matriz do usuário'
-print 'Total: '+str(len(u))
-print u
-
-test = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.5)
-print str(distanceCos(u,test))
-'''

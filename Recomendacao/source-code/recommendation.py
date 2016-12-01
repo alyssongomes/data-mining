@@ -8,8 +8,6 @@ from decimal import *
 
 matriz = []
 #matriz = [["movieid","Action","Adventure","Animation","Children","Comedy","Crime","Documentary","Drama","Fantasy","Film-Noir","Horror","Musical","Mystery","Romance","Sci-Fi","Thriller","War","Western","(no genres listed)"]]
-#actors = [] -> [19:51871]
-#directors = [] -> [51872:64958]
 
 #Constroi a matriz com todas as caracterista dos filmes
 def buildMatriz():
@@ -36,11 +34,7 @@ def buildMatriz():
     matriz[0] = matriz[0] + actors + directors
     matriz[0].append('avg')'''
 
-#Mapeia cada filme e compara com o perfil do usuário, e recomenda N filmes para o usuário
-def recommended(profileUser,userId,n = 5):
-
-    rows = findMoviesNotAssited(profileUser,matriz[0][1:],userId)
-
+def mapper(rows, profileUser):
     movies = []
 
     #popular com gêneros, diretores e atores
@@ -76,12 +70,23 @@ def recommended(profileUser,userId,n = 5):
 
         movie = matriz.pop()
         movies.append((distanceCos(profileUser,movie[1:]),movie[0]))
-    #movies.sort(reverse = True)
-    return movies[0:n]
+    movies.sort()
+    return movies
+
+#Mapeia cada filme e compara com o perfil do usuário, e recomenda N filmes para o usuário
+def recommended(profileUser,userId,n = 5):
+
+    rowsg,rowsd,rowsa = findMoviesNotAssited(profileUser,matriz[0][1:],userId)
+    moviesg = mapper(rowsg,profileUser)
+    moviesd = mapper(rowsd,profileUser)
+    moviesa = mapper(rowsa,profileUser)
+
+    if len(moviesg) < n or len(moviesd) < n or len(moviesa) < n:
+        n = min([len(moviesg),len(moviesd),len(moviesa)])
+    return moviesg[0:n],moviesd[0:n],moviesa[0:n]
 
 
 if __name__ == '__main__':
-    #x = [(0.0, 33573L), (0.0, 69565L), (0.0, 69864L), (0.0, 80226L), (0.0, 89100L), (0.0, 89215L), (0.0, 90493L), (0.0, 92268L), (0.0, 92516L), (0.0, 94076L)]
     userid = 1
 
     print "begin building matriz..."
@@ -92,38 +97,18 @@ if __name__ == '__main__':
     user = defineProfile(copy.copy(matriz),userid)
     print "ended building profile user.."
 
-    '''i,j,mapa = 0,1,[]
-    while i < len(user) and j < len(matriz[0]):
-        mapa.append((user[j-1],matriz[0][j]))
-        i += 1
-        j += 1
-
-    mapa.sort(reverse = True)
-    print str(mapa[1:10])'''
-
     print "begin comparating movies..."
-    movies = recommended(user,userid,10)
+    moviesByGenres,moviesByDirector,moviesByActors = recommended(user,userid)
     print "ended comparating movies..."
-    print movies
-    for m in movies:
+    print
+    print "Recomendação por Gênero"
+    for m in moviesByGenres:
         print findMovie(m[1])
-
-    '''
-    print 'Total: '+str(len(matriz[0]))
-    for l in matriz:
-        print l
-
-    print 'Usuário'
-    print user
-    print str(len(user))
-
-    movies = recommended(user,5)
-    print movies
-
-    print '####### verify #######'
-    for i in xrange(1,len(matriz)):
-        print verify(matriz[i])
-    print verify(user)
-
-    print findMovie(movies[0][1])
-    '''
+    print
+    print "Recomendação por Diretor"
+    for m in moviesByDirector:
+        print findMovie(m[1])
+    print
+    print "Recomendação por Atores"
+    for m in moviesByActors:
+        print findMovie(m[1])

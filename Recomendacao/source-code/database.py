@@ -45,39 +45,21 @@ def findMoviesNotAssited(profileUser,matriz,userId):
     actors.sort(reverse = True)
     directors.sort(reverse = True)
 
-    query,j = "SELECT * FROM movies_full WHERE movieid NOT IN (SELECT movieid FROM ratings WHERE userid ="+str(userId)+") and ",0
-    query += "actors like '%"+actors[0][1]+"%' or actors like '%"+actors[1][1]+"%' and "
-    query += "genres like '%"+genres[0][1]+"%' or genres like '%"+genres[1][1]+"%' or genres like '%"+genres[2][1]+"%' and "
-    query += "director like '%"+directors[0][1]+"%'"
+    queryGenres = "select distinct(m.movieid),m.title,m.genres,m.director,m.actors,m.released,m.average from ratings r, movies_full m where m.movieid NOT IN (SELECT movieid FROM ratings WHERE userid ="+str(userId)+") and r.movieid = m.movieid and m.genres like '%"+genres[0][1]+"%' and m.genres like '%"+genres[1][1]+"%' and m.genres like '%"+genres[2][1]+"%'"
+    queryDirector = "select distinct(m.movieid),m.title,m.genres,m.director,m.actors,m.released,m.average from ratings r, movies_full m where m.movieid NOT IN (SELECT movieid FROM ratings WHERE userid ="+str(userId)+") and r.movieid = m.movieid and m.director like '%"+directors[0][1]+"%'"
+    queryActors = "select distinct(m.movieid),m.title,m.genres,m.director,m.actors,m.released,m.average from ratings r, movies_full m where r.movieid = m.movieid and m.movieid NOT IN (SELECT movieid FROM ratings WHERE userid ="+str(userId)+")  and (actors like '%"+actors[0][1]+"%' or m.actors like '%"+actors[1][1]+"%' ) and ( m.genres like '%"+genres[0][1]+"%' or m.genres like '%"+genres[1][1]+"%' or m.genres like '%"+genres[2][1]+"%')"
 
-    '''while j < len(p):
-        if 0 <= matriz.index(p[j][1]) <= 18:
-            #if j != len(p)-1:
-            if g < 2:
-                g += 1
-                query += " genres like '%"+p[j][1]+"%' or"
-            elif g == 2:
-                query += " genres like '%"+p[j][1]+"%'"
+    print queryGenres
+    print queryDirector
+    print queryActors
 
-        if 19 <= matriz.index(p[j][1]) <= 51871:
-            if a < 2:
-                a += 1
-                query += " genres like '%"+p[j][1]+"%' or"
-            elif a == 2:
-                query += " genres like '%"+p[j][1]+"%'"
-
-        if 51872 <= matriz.index(p[j][1]) <= 64957:
-            if d < 2:
-                d += 1
-                query += " directors like '%"+p[j][1]+"%' or"
-            elif d == 2:
-                query += " directors like '%"+p[j][1]+"%'"
-        j += 1'''
-
-    print query
-
-    c.execute(query)
-    return c.fetchall()
+    c.execute(queryGenres)
+    g = c.fetchall()
+    c.execute(queryDirector)
+    d = c.fetchall()
+    c.execute(queryActors)
+    a = c.fetchall()
+    return g,d,a
 
 def insertMatriz(mapped,movieid):
     mapped = str(mapped).replace('[','').replace(']','')
